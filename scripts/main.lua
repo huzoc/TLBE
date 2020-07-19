@@ -58,6 +58,27 @@ function Main.tick()
     end
 end
 
+function Main.chart_added(event)
+    local player = game.players[1]
+    local mainCamera = global.playerSettings[1].cameras[1]
+    --player.print("ADDED: " .. event.tag.text)
+    local newEntityBBox = {
+        left = mainCamera.minPos.x,
+        bottom = mainCamera.minPos.y,
+        right = mainCamera.maxPos.x,
+        top = mainCamera.maxPos.y
+    }
+    if event.tag.text == "ctl" then
+        newEntityBBox.left = event.tag.position.x
+        newEntityBBox.bottom = event.tag.position.y
+    end
+    if event.tag.text == "cbr" then
+        newEntityBBox.right = event.tag.position.x
+        newEntityBBox.top = event.tag.position.y
+    end
+    Main.move_camera(newEntityBBox, true)
+end
+
 function Main.entity_built(event)
     -- top/bottom seems to be swapped, so use this table to reduce confusion of rest of the code
     local newEntityBBox = {
@@ -67,26 +88,31 @@ function Main.entity_built(event)
         top = event.created_entity.bounding_box.right_bottom.y + boundarySize
     }
 
+    Main.move_camera(newEntityBBox, false)
+
+end
+
+function Main.move_camera(bounding_box, force_box)
     for i, playerSettings in ipairs(global.playerSettings) do
         local mainCamera = playerSettings.cameras[1]
 
         if mainCamera.factorySize == nil then
             -- Set start point of base
-            mainCamera.minPos = {x = newEntityBBox.left, y = newEntityBBox.bottom}
-            mainCamera.maxPos = {x = newEntityBBox.right, y = newEntityBBox.top}
+            mainCamera.minPos = {x = bounding_box.left, y = bounding_box.bottom}
+            mainCamera.maxPos = {x = bounding_box.right, y = bounding_box.top}
         else
             -- Recalculate base boundary
-            if (newEntityBBox.left < mainCamera.minPos.x) then
-                mainCamera.minPos.x = newEntityBBox.left
+            if (force_box or bounding_box.left < mainCamera.minPos.x) then
+                mainCamera.minPos.x = bounding_box.left
             end
-            if (newEntityBBox.bottom < mainCamera.minPos.y) then
-                mainCamera.minPos.y = newEntityBBox.bottom
+            if (force_box or bounding_box.bottom < mainCamera.minPos.y) then
+                mainCamera.minPos.y = bounding_box.bottom
             end
-            if (newEntityBBox.right > mainCamera.maxPos.x) then
-                mainCamera.maxPos.x = newEntityBBox.right
+            if (force_box or bounding_box.right > mainCamera.maxPos.x) then
+                mainCamera.maxPos.x = bounding_box.right
             end
-            if (newEntityBBox.top > mainCamera.maxPos.y) then
-                mainCamera.maxPos.y = newEntityBBox.top
+            if (force_box or bounding_box.top > mainCamera.maxPos.y) then
+                mainCamera.maxPos.y = bounding_box.top
             end
         end
 
